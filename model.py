@@ -69,15 +69,18 @@ def data_augmentation(images, angles, path_to_aug=r"./aug_data"):
         2. Randomly distort image multiple times based on the distribution
         3. Save all images to a new directory
     """
+    new_image_paths = []
+    new_angles = []
+    count = 0
+    for img, ang in zip(images, angles):
+        # Save the original image
+        new_path = os.path.join(path_to_aug, "{}_{}".format(count, os.path.basename(img)))
+        new_image_paths.append(new_path)
+        new_angles.append(ang)
+        cv2.imwrite(new_path, cv2.imread(img))
+        count += 1
     
 if __name__ == "__main__":
     images, angles = read_csv(r'./my_data/driving_log.csv', plot="./plots/original_distribution.png")
-    print (len(images), len(angles))
-    print (images[0])
-    img = cv2.imread(images[100])
-    flipped_image = flip_image(img)
-    flipped_image_brightness = change_brightness(flipped_image)
-    cv2.imwrite(r"./plots/original_image.png", img)
-    cv2.imwrite(r"./plots/flipped_image.png", flipped_image)
-    cv2.imwrite(r"./plots/brightness_image.png", flipped_image_brightness)
+    data_augmentation(images, angles)
     
