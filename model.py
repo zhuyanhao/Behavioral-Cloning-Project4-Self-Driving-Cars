@@ -31,13 +31,16 @@ def read_csv(path_to_csv, plot=None, root_dir=r"./my_data/IMG"):
         steering_angle.append(angle - correction)
     
     if plot:
-        pyplot.hist(steering_angle, bins=10, density=False)
-        pyplot.title('Data Distribution')
-        pyplot.xlabel('Steering Angle')
-        pyplot.ylabel('density')
-        pyplot.savefig(plot)
+        plot_distribution(steering_angle, plot)
         
     return path_to_image, steering_angle
+
+def plot_distribution(data, path_to_plot):
+    pyplot.hist(data, bins=10)
+    pyplot.title('Data Distribution')
+    pyplot.xlabel('Steering Angle')
+    pyplot.ylabel('density')
+    pyplot.savefig(path_to_plot)
 
 def change_brightness(image):
     """
@@ -60,7 +63,7 @@ def flip_image(image):
     """
     Flip the image horizontally
     """
-    return cv2.flip( img, 1 )
+    return cv2.flip( image, 1 )
 
 def data_augmentation(images, angles, path_to_aug=r"./aug_data"):
     """
@@ -72,6 +75,7 @@ def data_augmentation(images, angles, path_to_aug=r"./aug_data"):
     new_image_paths = []
     new_angles = []
     count = 0
+
     for img, ang in zip(images, angles):
         # Save the original image
         new_path = os.path.join(path_to_aug, "{}_{}".format(count, os.path.basename(img)))
@@ -79,8 +83,60 @@ def data_augmentation(images, angles, path_to_aug=r"./aug_data"):
         new_angles.append(ang)
         cv2.imwrite(new_path, cv2.imread(img))
         count += 1
+
+        hist, edges = np.histogram(angles)
+        max_index = np.argmax(hist)
+        max_value = hist[max_index]
+
+        # Find the index
+        current_index = None
+        for index, value in enumerate(edges):
+            if value >= ang:
+                current_index = index - 1
+                break
+        
+        duplication = max_value // (2*hist[current_index])
+
+        original_image = cv2.imread(img)
+        flipped_image = flip_image(original_image)
+        new_path = os.path.join(path_to_aug, "{}_{}".format(count, os.path.basename(img)))
+        new_image_paths.append(new_path)
+        new_angles.append(-ang)
+        cv2.imwrite(new_path, flipped_image)
+        count += 1
+
+        if duplication < 1:
+            pass
+        else:
+            # Change brightness 3 times for the original image
+            for _ in range(duplication):
+                new_path = os.path.join(path_to_aug, "{}_{}".format(count, os.path.basename(img)))
+                new_image_paths.append(new_path)
+                new_angles.append(ang)
+                cv2.imwrite(new_path, change_brightness(original_image))
+                count += 1
+
+            # Change brightness 3 times for the flipped image
+            for _ in range(duplication):
+                new_path = os.path.join(path_to_aug, "{}_{}".format(count, os.path.basename(img)))
+                new_image_paths.append(new_path)
+                new_angles.append(-ang)
+                cv2.imwrite(new_path, change_brightness(flipped_image))
+                count += 1
     
-if __name__ == "__main__":
+    return new_image_paths, new_angles
+
+def generate_data():
+    """
+    Generate Data used for training the network
+    """
     images, angles = read_csv(r'./my_data/driving_log.csv', plot="./plots/original_distribution.png")
-    data_augmentation(images, angles)
-    
+    images, angles = data_augmentation(images, angles)
+    with open("aug_data.csv", "w") as csvfile:
+        writer = csv.writer(csvfile, delimiter=',')
+        for image, angle in zip(images, angles):
+            writer.writerow([image, angle]) 
+    plot_distribution(angles, r"./plots/augment_distribution.png")
+
+if __name__ == "__main__":
+    pass
