@@ -1,9 +1,11 @@
-import csv
+import csv, os, random
+import cv2
 import matplotlib
+import numpy as np
 matplotlib.use('Agg')
-from matplotlib import pyplot
+import matplotlib.pyplot as pyplot
 
-def read_csv(path_to_csv, plot=None):
+def read_csv(path_to_csv, plot=None, root_dir=r"./my_data/IMG"):
     """
     Read data from csv file and return two lists (path to image and steering angle).
     When plot=True, plot the distribution of steering angle.
@@ -15,9 +17,12 @@ def read_csv(path_to_csv, plot=None):
     path_to_image = []
     steering_angle = []
     for record in recorded_data:
-        path_to_image.append(record[0])  # Center
-        path_to_image.append(record[1])  # Left
-        path_to_image.append(record[2])  # Right
+        path1 = os.path.join(root_dir, os.path.basename(record[0]))
+        path2 = os.path.join(root_dir, os.path.basename(record[1]))
+        path3 = os.path.join(root_dir, os.path.basename(record[2]))
+        path_to_image.append(path1)  # Center
+        path_to_image.append(path2)  # Left
+        path_to_image.append(path3)  # Right
         
         angle = float(record[3])
         correction = 0.2
@@ -26,7 +31,7 @@ def read_csv(path_to_csv, plot=None):
         steering_angle.append(angle - correction)
     
     if plot:
-        pyplot.hist(steering_angle, bins=10, density=True)
+        pyplot.hist(steering_angle, bins=10, density=False)
         pyplot.title('Data Distribution')
         pyplot.xlabel('Steering Angle')
         pyplot.ylabel('density')
@@ -34,12 +39,30 @@ def read_csv(path_to_csv, plot=None):
         
     return path_to_image, steering_angle
 
-def distort_image(path_to_image):
+def change_brightness(image):
     """
-    Randomly distort the image and return the newly generated image.
+    Randomly change the brightness of image. Image use BGR color space.
     """
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    h, s, v = cv2.split(hsv)
+    
+    value = random.randint(-30, 30)
+    value = np.uint8(value)
+    v += value
+    v[v > 255] = 255
+    v[v < 0] = 0
 
-def data_augmentation(images, angles, path_to_aug):
+    final_hsv = cv2.merge((h, s, v))
+    new_image = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+    return new_image
+
+def flip_image(image):
+    """
+    Flip the image horizontally
+    """
+    return cv2.flip( img, 1 )
+
+def data_augmentation(images, angles, path_to_aug=r"./aug_data"):
     """
     Three steps in data augmentation:
         1. Flip all images whose steering angle is larger than 0.25
@@ -50,4 +73,11 @@ def data_augmentation(images, angles, path_to_aug):
 if __name__ == "__main__":
     images, angles = read_csv(r'./my_data/driving_log.csv', plot="./plots/original_distribution.png")
     print (len(images), len(angles))
+    print (images[0])
+    img = cv2.imread(images[100])
+    flipped_image = flip_image(img)
+    flipped_image_brightness = change_brightness(flipped_image)
+    cv2.imwrite(r"./plots/original_image.png", img)
+    cv2.imwrite(r"./plots/flipped_image.png", flipped_image)
+    cv2.imwrite(r"./plots/brightness_image.png", flipped_image_brightness)
     
