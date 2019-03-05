@@ -4,6 +4,17 @@ import matplotlib
 import numpy as np
 matplotlib.use('Agg')
 import matplotlib.pyplot as pyplot
+import sklearn
+from sklearn.model_selection import train_test_split
+import math
+
+# Import functionality from keras
+import tensorflow as tf
+from keras.models import Sequential, model_from_json
+import keras.layers as layers
+from keras import regularizers
+from keras.optimizers import Adam
+from keras.callbacks import ModelCheckpoint, Callback
 
 def read_csv(path_to_csv, plot=None, root_dir=r"./my_data/IMG"):
     """
@@ -138,5 +149,126 @@ def generate_data():
             writer.writerow([image, angle]) 
     plot_distribution(angles, r"./plots/augment_distribution.png")
 
+def rgb2yuv(x):
+    return tf.image.rgb_to_hsv(x)
+
+def create_model():
+    """
+    Create a convolutional neural network mentioned in NVIDIA paper
+    """
+    model = Sequential()
+    
+    # The model input is image data (320x160)
+    # We need to crop it
+    model.add(
+        layers.Cropping2D(cropping=((50,20), (0,0)), data_format="channels_last", input_shape=(160,320,3))
+        )
+
+    # Normalize the images to [0,1], a requirement of tf.image.rgb_to_hsv(x)
+    model.add(layers.Lambda(lambda x: x/255.0))
+
+    # Convert images to YUV color space
+    model.add(layers.Lambda(rgb2yuv))
+
+    # Model in NVIDIA's paper
+    # Add three 5x5 convolution layers (output depth 24, 36, and 48), each with 2x2 stride
+    model.add(layers.Conv2D(24, (5,5), strides=(2, 2), padding='valid', kernel_regularizer=regularizers.l2(0.001)))
+    model.add(layers.ELU(alpha=1.0))
+    model.add(layers.Conv2D(36, (5,5), strides=(2, 2), padding='valid', kernel_regularizer=regularizers.l2(0.001)))
+    model.add(layers.ELU(alpha=1.0))
+    model.add(layers.Conv2D(48, (5,5), strides=(2, 2), padding='valid', kernel_regularizer=regularizers.l2(0.001)))
+    model.add(layers.ELU(alpha=1.0))
+    
+    # Add two 3x3 convolution layers (output depth 64, and 64)
+    model.add(layers.Conv2D(64, (3,3), padding='valid', kernel_regularizer=regularizers.l2(0.001)))
+    model.add(layers.ELU(alpha=1.0))
+    model.add(layers.Conv2D(64, (3,3), padding='valid', kernel_regularizer=regularizers.l2(0.001)))
+    model.add(layers.ELU(alpha=1.0))
+
+    # Add a flatten layer
+    model.add(layers.Flatten())
+
+    # Add three fully connected layers (depth 100, 50, 10), tanh activation (and dropouts)
+    model.add(layers.Dense(100, kernel_regularizer=regularizers.l2(0.001)))
+    model.add(layers.ELU(alpha=1.0))
+    model.add(layers.Dense(50, kernel_regularizer=regularizers.l2(0.001)))
+    model.add(layers.ELU(alpha=1.0))
+    model.add(layers.Dense(10, kernel_regularizer=regularizers.l2(0.001)))
+    model.add(layers.ELU(alpha=1.0))
+    model.add(layers.Dense(1))
+
+    return model
+
+def load_data(path_to_csv, num_samples=None):
+    """
+    Read the csv file given and return the path to images and steering angles
+    """
+    image_path = []
+    steering_angle = []
+    with open(path_to_csv, "r", newline='') as f:
+        recorded_data = csv.reader(f, delimiter=',', quotechar='|')
+        for line in recorded_data:
+            image_path.append(line[0])
+            steering_angle.append(float(line[1]))
+    
+    if num_samples is not None:
+        image_path = image_path[:num_samples]
+        steering_angle = steering_angle[:num_samples]
+    
+    return image_path, steering_angle
+
+def data_generator(path_to_images, steering_angles, batch_size=128):
+    """
+    Data generator for training and validation
+    """
+    # X and Y has to be the same size
+    assert len(path_to_images) == len(steering_angles)
+
+    num_samples = len(path_to_images)
+    while 1: # Loop forever so the generator never terminates
+        path_to_images, steering_angles = sklearn.utils.shuffle(path_to_images, steering_angles)
+        for offset in range(0, num_samples, batch_size):
+            images = []
+            angles = []
+
+            path_batch = path_to_images[offset:offset+batch_size]
+            angle_batch = steering_angles[offset:offset+batch_size]
+            for path, angle in zip(path_batch, angle_batch):
+                image = cv2.cvtColor(cv2.imread(path),cv2.COLOR_BGR2RGB)
+                images.append(image)
+                angles.append(angle)
+
+            X_train = np.array(images)
+            y_train = np.array(angles)
+            yield sklearn.utils.shuffle(X_train, y_train)
+
+def train_model(model, images, angles, batch_size):
+    """
+    Train the model using Adam optimizer and generator
+    """
+    # Split training and validation
+    X_train, X_test, y_train, y_test = train_test_split(images, angles, test_size=0.2)
+
+    # Generator
+    train_generator = data_generator(X_train, y_train, batch_size)
+    validation_generator = data_generator(X_test, y_test, batch_size)
+
+    # Adam optimizer
+    model.compile(optimizer=Adam(lr=1e-3), loss='mse')
+
+    # Train the model
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch = math.ceil(len(y_train)/batch_size), 
+        validation_data = validation_generator,
+        validation_steps = math.ceil(len(y_test)/batch_size),
+        epochs = 5, 
+        verbose = 1
+    )
+    
 if __name__ == "__main__":
-    pass
+    model = create_model()
+    images, angles = load_data("aug_data.csv", 10000)
+
+    # Train the model
+    train_model(model, images, angles, 64)
