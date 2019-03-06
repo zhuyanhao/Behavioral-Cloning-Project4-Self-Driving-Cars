@@ -14,7 +14,7 @@ from keras.models import Sequential, model_from_json
 import keras.layers as layers
 from keras import regularizers
 from keras.optimizers import Adam
-from keras.callbacks import ModelCheckpoint, Callback
+from keras.callbacks import ModelCheckpoint
 
 def read_csv(path_to_csv, plot=None, root_dir=r"./my_data/IMG"):
     """
@@ -242,19 +242,37 @@ def data_generator(path_to_images, steering_angles, batch_size=128):
             y_train = np.array(angles)
             yield sklearn.utils.shuffle(X_train, y_train)
 
-def train_model(model, images, angles, batch_size):
+def test_generator(path_to_images, batch_size=128):
+    """
+    Data generator for training and validation
+    """
+    num_samples = len(path_to_images)
+    while 1: # Loop forever so the generator never terminates
+        for offset in range(0, num_samples, batch_size):
+            images = []
+            path_batch = path_to_images[offset:offset+batch_size]
+            for path in path_batch:
+                image = cv2.cvtColor(cv2.imread(path),cv2.COLOR_BGR2RGB)
+                images.append(image)
+
+            yield np.array(images)
+
+def train_model(model, images, angles, batch_size, learning_rate=1e-4):
     """
     Train the model using Adam optimizer and generator
     """
     # Split training and validation
-    X_train, X_test, y_train, y_test = train_test_split(images, angles, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(images, angles, test_size=0.1)
 
     # Generator
     train_generator = data_generator(X_train, y_train, batch_size)
     validation_generator = data_generator(X_test, y_test, batch_size)
 
     # Adam optimizer
-    model.compile(optimizer=Adam(lr=1e-3), loss='mse')
+    model.compile(optimizer=Adam(lr=learning_rate), loss='mse')
+
+    # Save the best model
+    checkpoint = ModelCheckpoint("model.h5", monitor='val_loss', verbose=1, save_best_only=True, mode='min')
 
     # Train the model
     model.fit_generator(
@@ -262,13 +280,38 @@ def train_model(model, images, angles, batch_size):
         steps_per_epoch = math.ceil(len(y_train)/batch_size), 
         validation_data = validation_generator,
         validation_steps = math.ceil(len(y_test)/batch_size),
-        epochs = 5, 
-        verbose = 1
+        epochs = 20, 
+        verbose = 1,
+        callbacks = [checkpoint]
     )
-    
-if __name__ == "__main__":
-    model = create_model()
-    images, angles = load_data("aug_data.csv", 10000)
 
-    # Train the model
+def test_model():
+    """
+    Create the model, train it on the first 2000 and see if it can overfits
+    """
+    model = create_model()
+    images, angles = load_data("aug_data.csv", 2000)
+
     train_model(model, images, angles, 64)
+    images_for_test = images[455:465]
+    actual_angles = angles[455:465]
+    test_data_generator = test_generator(images_for_test, 32)
+
+    predicted_angles = model.predict_generator(test_data_generator, steps=1)
+    for predict, actual in zip(predicted_angles, actual_angles):
+        print (predict, actual)
+
+def run_on_server():
+    """
+    Function that runs the entire process on the server
+    """
+    # Data augmentation
+    path_to_image, steering_angle = read_csv(r'./my_data/driving_log.csv', plot=None)
+    path_to_image, steering_angle = data_augmentation(path_to_image, steering_angle, path_to_aug=r"/opt/aug_data")
+
+    # Train model
+    train_model(path_to_image, steering_angle, angles, 128)
+
+if __name__ == "__main__":
+    # test_model()
+    run_on_server()
