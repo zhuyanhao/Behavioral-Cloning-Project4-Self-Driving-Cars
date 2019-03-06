@@ -280,7 +280,7 @@ def train_model(model, images, angles, batch_size, learning_rate=1e-4):
         steps_per_epoch = math.ceil(len(y_train)/batch_size), 
         validation_data = validation_generator,
         validation_steps = math.ceil(len(y_test)/batch_size),
-        epochs = 20, 
+        epochs = 200, 
         verbose = 1,
         callbacks = [checkpoint]
     )
@@ -307,10 +307,10 @@ def run_on_server():
     """
     # Data augmentation
     path_to_image, steering_angle = read_csv(r'./my_data/driving_log.csv', plot=None)
-    path_to_image, steering_angle = data_augmentation(path_to_image, steering_angle, path_to_aug=r"/opt/aug_data")
+    path_to_image, steering_angle = data_augmentation(path_to_image, steering_angle, path_to_aug=r"/opt")
 
     # Train model
-    train_model(path_to_image, steering_angle, angles, 128)
+    train_model(path_to_image, steering_angle, 128)
 
 if __name__ == "__main__":
     # test_model()
