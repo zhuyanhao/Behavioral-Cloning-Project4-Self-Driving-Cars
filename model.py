@@ -310,7 +310,8 @@ def run_on_server():
     path_to_image, steering_angle = data_augmentation(path_to_image, steering_angle, path_to_aug=r"/opt")
 
     # Train model
-    train_model(path_to_image, steering_angle, 128)
+    model = create_model()
+    train_model(model, path_to_image, steering_angle, 128)
 
 if __name__ == "__main__":
     # test_model()
