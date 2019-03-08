@@ -90,10 +90,11 @@ def data_augmentation(images, angles, path_to_aug=r"./aug_data"):
     for img, ang in zip(images, angles):
         # Save the original image
         new_path = os.path.join(path_to_aug, "{}_{}".format(count, os.path.basename(img)))
-        new_image_paths.append(new_path)
-        new_angles.append(ang)
-        cv2.imwrite(new_path, cv2.imread(img))
-        count += 1
+        if random.random() <= 0.2:
+            new_image_paths.append(new_path)
+            new_angles.append(ang)
+            cv2.imwrite(new_path, cv2.imread(img))
+            count += 1
 
         hist, edges = np.histogram(angles)
         max_index = np.argmax(hist)
@@ -111,29 +112,32 @@ def data_augmentation(images, angles, path_to_aug=r"./aug_data"):
         original_image = cv2.imread(img)
         flipped_image = flip_image(original_image)
         new_path = os.path.join(path_to_aug, "{}_{}".format(count, os.path.basename(img)))
-        new_image_paths.append(new_path)
-        new_angles.append(-ang)
-        cv2.imwrite(new_path, flipped_image)
-        count += 1
+        if random.random() <= 0.2:
+            new_image_paths.append(new_path)
+            new_angles.append(-ang)
+            cv2.imwrite(new_path, flipped_image)
+            count += 1
 
         if duplication < 1:
             pass
         else:
             # Change brightness 3 times for the original image
             for _ in range(duplication):
-                new_path = os.path.join(path_to_aug, "{}_{}".format(count, os.path.basename(img)))
-                new_image_paths.append(new_path)
-                new_angles.append(ang)
-                cv2.imwrite(new_path, change_brightness(original_image))
-                count += 1
+                if random.random()<= 0.2:
+                    new_path = os.path.join(path_to_aug, "{}_{}".format(count, os.path.basename(img)))
+                    new_image_paths.append(new_path)
+                    new_angles.append(ang)
+                    cv2.imwrite(new_path, change_brightness(original_image))
+                    count += 1
 
             # Change brightness 3 times for the flipped image
             for _ in range(duplication):
-                new_path = os.path.join(path_to_aug, "{}_{}".format(count, os.path.basename(img)))
-                new_image_paths.append(new_path)
-                new_angles.append(-ang)
-                cv2.imwrite(new_path, change_brightness(flipped_image))
-                count += 1
+                if random.random() <= 0.2:
+                    new_path = os.path.join(path_to_aug, "{}_{}".format(count, os.path.basename(img)))
+                    new_image_paths.append(new_path)
+                    new_angles.append(-ang)
+                    cv2.imwrite(new_path, change_brightness(flipped_image))
+                    count += 1
     
     return new_image_paths, new_angles
 
@@ -307,7 +311,7 @@ def run_on_server():
     """
     # Data augmentation
     path_to_image, steering_angle = read_csv(r'./my_data/driving_log.csv', plot=None)
-    path_to_image, steering_angle = data_augmentation(path_to_image, steering_angle, path_to_aug=r"/opt")
+    path_to_image, steering_angle = data_augmentation(path_to_image, steering_angle, path_to_aug=r"./new_data")
 
     # Train model
     model = create_model()
