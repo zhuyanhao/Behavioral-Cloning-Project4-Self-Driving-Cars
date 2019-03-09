@@ -154,6 +154,7 @@ def generate_data():
     plot_distribution(angles, r"./plots/augment_distribution.png")
 
 def rgb2yuv(x):
+    import tensorflow as tf
     return tf.image.rgb_to_hsv(x)
 
 def create_model():
