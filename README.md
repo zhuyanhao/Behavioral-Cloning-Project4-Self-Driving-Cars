@@ -109,7 +109,7 @@ Brightness changed:
 
 ![alt text][image4]
 
-To flatten the distribution, I first chose a number of bins (I decided upon 23) and produced a histogram of the turning angles using `numpy.histogram`. The distribution of original data looks like this:
+To flatten the distribution, I first chose a number of bins (10 was used) and produced a histogram of the turning angles using `numpy.histogram`. The distribution of original data looks like this:
 
 ![alt text][image5]
 
