@@ -193,7 +193,7 @@ def create_model():
     # Add a flatten layer
     model.add(layers.Flatten())
 
-    # Add three fully connected layers (depth 100, 50, 10), tanh activation (and dropouts)
+    # Add three fully connected layers
     model.add(layers.Dense(100, kernel_regularizer=regularizers.l2(0.001)))
     model.add(layers.ELU(alpha=1.0))
     model.add(layers.Dense(50, kernel_regularizer=regularizers.l2(0.001)))
