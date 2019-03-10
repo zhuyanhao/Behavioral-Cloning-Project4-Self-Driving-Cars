@@ -18,13 +18,12 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/placeholder.png "Model Visualization"
-[image2]: ./examples/placeholder.png "Grayscaling"
-[image3]: ./examples/placeholder_small.png "Recovery Image"
-[image4]: ./examples/placeholder_small.png "Recovery Image"
-[image5]: ./examples/placeholder_small.png "Recovery Image"
-[image6]: ./examples/placeholder_small.png "Normal Image"
-[image7]: ./examples/placeholder_small.png "Flipped Image"
+[image1]: ./plots/nVidia_model.png "NVIDIA model"
+[image2]: ./plots/original_image.png "Original image"
+[image3]: ./plots/flipped_image.png "Flipped image"
+[image4]: ./plots/brightness_image.png "Brightness changed"
+[image5]: ./plots/original_distribution.png "Original distribution"
+[image6]: ./plots/augment_distribution.png "Augmented distribution"
 
 ## Rubric Points
 ### Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
@@ -54,7 +53,9 @@ The model.py file contains the code for training and saving the convolution neur
 
 #### 1. An appropriate model architecture has been employed
 
-The instructions suggest starting from a known self-driving car model and provided a link to the [nVidia model](https://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf). The below diagram shows each layer of the network:![alt text][image1]
+The instructions suggest starting from a known self-driving car model and provided a link to the [nVidia model](https://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf). The below diagram shows each layer of the network:
+
+![alt text][image1]
 
 The conversion of color space from RGB to YUV is also added at the very beginning of the network so that no change is required in drive.py to make simulator work. As the community suggests, ELU activation function is added at each layer. When training the network, ADAM optimizer is used with learning rate = 1e-4. The model works quite well with only 20 epochs; to make it more like a human driver, the model is trained for 200 epochs.
 
@@ -97,21 +98,24 @@ Below is the guidelines I followed in order to capture good driving behavior:
 To increase the robustness of the model, the data set is augmented so that: 1) the distribution of steering angle is flattened and 2) the model becomes less sensitive to the brightness of the image. Flipping and changing brightness are the only two approaches used in data augmentation and their effect is shown below.
 
 Original image:
-![alt text][image6]
+
+![alt text][image2]
 
 Flipped image:
-![alt text][image7]
+
+![alt text][image3]
 
 Brightness changed:
-![alt text][image7]
+
+![alt text][image4]
 
 To flatten the distribution, I first chose a number of bins (I decided upon 23) and produced a histogram of the turning angles using `numpy.histogram`. The distribution of original data looks like this:
 
-![alt text][image7]
+![alt text][image5]
 
 As expected, the bin with the smallest steering angle (absolute value) has the most number of samples. The images that belong to other bins are duplicated by using the augmentation strategy mentioned earlier. The distribution of augmented data looks like this:
 
-![alt text][image7]
+![alt text][image6]
 
 I finally randomly shuffled the data set and put 10% of the data into a validation set. 
 
