@@ -61,7 +61,7 @@ The conversion of color space from RGB to YUV is also added at the very beginnin
 
 #### 2. Attempts to reduce overfitting in the model
 
-Contrary to the popular approach in the community (adding dropout layer), an l2 regularizer is used in each layer. The validation loss is always close to the training loss, which indicates the elimination of overfitting issue.
+Contrary to the popular approach in the community (adding dropout layer), an l2 regularizer is used in each layer. The validation loss is always close to the training loss, which indicates the elimination of overfitting issue. For the model used in autonomous driving mode, the training loss and validation loss are 0.0614 and 0.0503 after 200 epochs.
 
 #### 3. Model parameter tuning
 
@@ -71,7 +71,7 @@ Two parameters have been changed. The learning rate of ADAM optimizer is set to 
 
 Training data was chosen to keep the vehicle driving on the road. I used a combination of center lane driving, recovering from the left and right sides of the road. A few data augmentation techniques are used to flatten the distribution of steering angle.
 
-For details about how I created the training data, see the next section. 
+For details about how I created the training data prepared it for the model training/testing, please see the next section. 
 
 ### Model Architecture and Training Strategy
 
@@ -79,9 +79,11 @@ For details about how I created the training data, see the next section.
 
 The nvidia model presented above was implemented first without any modification. The car cannot complete a lap, which is a minimum requirement of this project.
 
-Then I added ELU activation function based on suggestions from the community. The model now seems overfitting as the validation loss is significantly larger than the training loss. Then I tried both the dropout layer and l2 regularizer; l2 regularizer seems to work better in this case.
+When I looked at the failed lap video, I noticed that the car cannot recover from the sides of the road. However, enough amount of data(images) has been provided for the recovering so the model must be under-fitting. One way to solve the problem is to add non-linearity to the model and the simplest way is to add activation function in each layer. Contrary to the most commonly used 'RELU' activation, I used ELU for two reasons: 1) its use is suggested by the community and 2) ELU has a continous derivative, which is better for training/optimizing. 
 
-At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
+With activation function added, the model works well in autonomous mode. However, the validation loss is significantly larger than the training loss, which indicates an over-fitting issue here. The model now seems overfitting as the validation loss is significantly larger than the training loss. Then I tried both the dropout layer and l2 regularizer. I had a hard time tuning the keep probability to make dropout work; then I switched to l2 regularizer and easily find the value of weights that works well.
+
+At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road. The over-fitting and under-fitting issues are also resolved.
 
 #### 2. Final Model Architecture
 
