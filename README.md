@@ -24,6 +24,7 @@ The goals / steps of this project are the following:
 [image4]: ./plots/brightness_image.png "Brightness changed"
 [image5]: ./plots/original_distribution.png "Original distribution"
 [image6]: ./plots/augment_distribution.png "Augmented distribution"
+[image7]: ./plots/model_summary.png "Summary of my model"
 
 ## Rubric Points
 ### Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
@@ -87,7 +88,9 @@ At the end of the process, the vehicle is able to drive autonomously around the 
 
 #### 2. Final Model Architecture
 
-The final model architecture is very close to the original nvidia model. The only difference is adding a Lambda layer for the conversion of color space so that no modification is needed in drive.py. 
+The final model architecture is very close to the original nvidia model. A few differences are: 1) ELU activation added in each layer to increase nonlinearity; 2) L2 regularizer added to avoid over-fitting and 3) preprocessing layer added to convert image from RGB to HUV. The preprocessing layer is added inside the model so that the input from simulator can be directly fed into my neural network. Below is the summary of the model: 
+
+![alt text][image7]
 
 #### 3. Creation of the Training Set & Training Process
 
