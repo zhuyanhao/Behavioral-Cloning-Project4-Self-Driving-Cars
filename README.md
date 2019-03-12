@@ -24,7 +24,7 @@ The goals / steps of this project are the following:
 [image4]: ./plots/brightness_image.png "Brightness changed"
 [image5]: ./plots/original_distribution.png "Original distribution"
 [image6]: ./plots/augment_distribution.png "Augmented distribution"
-[image7]: ./plots/model_summary.png "Summary of my model"
+[image7]: ./plots/model_summary.PNG "Summary of my model"
 
 ## Rubric Points
 ### Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
